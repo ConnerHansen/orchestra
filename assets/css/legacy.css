@@ -1,0 +1,286 @@
+/* This file is for your main application css. */
+html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: absolute;
+}
+
+body {
+  background-color: #53a1c5;
+  font-family: Arial;
+  margin: 0;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding-bottom: 22px;
+}
+
+h1 {
+  padding-top: 8px;
+  padding-bottom: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  text-shadow: 1px 1px 10px rgba(255, 255, 255, 0.3);
+  margin: 0;
+}
+
+.navbar {
+  width: 100%;
+  display: flex;
+  min-height: 0;
+  background-color: #333;
+  margin: 0;
+  text-align: center;
+  color: #eee;
+  font-weight: bold;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  border-radius: 0;
+  background: linear-gradient(to right, #444444 0%,#3f4c6b 50%,#444444 100%);
+}
+
+.navbar div {
+  flex: 1;
+}
+
+.navbar span {
+  padding-top: 8px;
+  float: right;
+  padding-right: 5px;
+}
+
+#content {
+  display: flex;
+  height: 100%;
+  /*padding: 10px 0 10px 10px;*/
+  padding: 0;
+}
+
+.sidebar {
+  position: absolute;
+  padding-left: 10px;
+  right: -240px;
+  top: 0;
+  width: 250px;
+  height: 100%;
+  transition-duration: 200ms;
+  transition-timing-function: ease-out;
+}
+
+.sidebar-content {
+  width: 100%;
+  height: 100%;
+  background-color: white;
+}
+
+.sidebar:hover {
+  right: 0;
+}
+
+.sidebar-entry {
+  padding: 10px;
+  cursor: pointer;
+  transition-duration: 200ms;
+}
+
+.sidebar-entry:hover {
+  box-shadow: inset 5px 0px #83d9f2;
+  padding-left: 15px;
+}
+
+.ui-sortable-placeholder {
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);
+  /*margin-right: 10px;*/
+  flex: 1;
+  width: 0;
+  min-width: 200px;
+  background-color: rgba(255, 255, 255, 0.4);
+  padding-bottom: 58px;
+}
+
+.ui-state-highlight {
+  .box-shadow: 0 0 2px 1px skyblue;
+}
+
+.logger-container {
+  /*border-radius: 3px;*/
+  /*box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2);*/
+  /*margin-right: 10px;*/
+  flex: 1;
+  width: 0;
+  min-width: 200px;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding-bottom: 58px;
+  margin-bottom: 10px;
+  border-right: 1px solid slategray;
+}
+
+.logger-button {
+  float: right;
+  padding: 10px;
+  font-size: 12px;
+  color: white;
+  /*font-weight: bold;*/
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+  transition-duration: 200ms;
+  cursor: pointer;
+  box-shadow: inset 0 0px 0 0 white;
+}
+
+.logger-button.left {
+  float: left;
+}
+
+.logger-button:hover {
+  box-shadow: inset 0 -3px 0 0 white;
+}
+
+.active:hover {
+  background-color: rgba(80, 255, 60, 0.4);
+  /*box-shadow: 0 0 10px rgba(55, 255, 100, 0.4);*/
+}
+
+.active {
+  /*background-color: #56db12;*/
+  background-color: rgba(55, 245, 42, 0.4);
+}
+
+.inactive:hover {
+  background-color: rgba(255, 90, 52, 0.7);
+  /*box-shadow: 0 0 10px rgba(255, 70, 32, 0.4);*/
+}
+
+.inactive {
+  /*background-color: #f3461e;*/
+  background-color: rgba(255, 70, 32, 0.7);
+}
+
+.logger-container.collapsed {
+  flex: 0;
+  padding: 0;
+  height: 0;
+  /*display: block;*/
+  display: none;
+}
+
+.logger-container.priority {
+  flex: 3;
+}
+
+.highlighted {
+}
+
+.highlighted-secondary {
+}
+
+@keyframes header_pulse {
+  0% {
+    background-color: #87ceeb;
+  }
+  100% {
+    background-color: slategrey;
+  }
+}
+
+@keyframes header_pulse2 {
+  0% {
+    background-color: #a0d5ea;
+  }
+  100% {
+    background-color: slategrey;
+  }
+}
+
+.logger-header {
+  font-size: 12px;
+  /*font-weight: bold;*/
+  text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  background-color: slategrey;
+  color: white;
+  padding: 10px;
+  /*border-radius: 3px 3px 0 0;*/
+  margin-bottom: 15px;
+  cursor: move;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+.highlighted .logger-header {
+  animation-name: header_pulse;
+  animation-duration: 300ms;
+  animation-timing-function: ease-out;
+}
+
+.highlighted-secondary .logger-header {
+  animation-name: header_pulse2;
+  animation-duration: 300ms;
+  animation-timing-function: ease-out;
+}
+
+.logger-content {
+  padding: 0 5px;
+  max-height: 100%;
+  overflow-y: auto;
+  display: block;
+  white-space: pre;
+  min-height: 100%;
+}
+
+.logger-content.wrap {
+  white-space: pre-wrap;
+}
+
+.logger-container.collapsed .logger-content {
+  display: none;
+}
+
+pre {
+  margin: 0;
+  white-space: inherit;
+  font-size: 10px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  display: table-row;
+}
+
+pre.minimap {
+  letter-spacing: -1px;
+  font-size: 8px;
+  line-height: 8px;
+}
+
+.red {
+  color: red;
+  background-color: rgba(255, 0, 0, 0.2);
+}
+
+.green {
+  color: green;
+  background-color: rgba(0, 255, 0, 0.2);
+}
+
+.yellow {
+  color: #ffad01;
+  background-color: rgba(255, 200, 0, 0.2);
+}
+
+.blue {
+  color: blue;
+  background-color: rgba(0, 0, 255, 0.2);
+}
+
+.pink {
+  color: pink;
+  background-color: rgba(255, 0, 150, 0.2);
+}
+
+.cyan {
+  color: #17b3b3;
+  background-color: rgba(100, 255, 255, 0.2);
+}

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Welcome to Orchestra</title>
+    <link rel="stylesheet" href="<%= static_path(@conn, "/css/bootstrap.min.css") %>">
+    <link rel="stylesheet" href="<%= static_path(@conn, "/css/app.css") %>">
+  </head>
+
+  <body>
+    <p class="alert alert-info" role="alert"><%= get_flash(@conn, :info) %></p>
+    <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<div class="navbar">
+  <div class="left"></div>
+  <div class="center">
+    <h1>Orchestra</h1>
+  </div>
+  <div class="right">
+    <span class="glyphicon glyphicon-menu-left" aria-hidden="true"></span>
+  </div>
+</div>
+
+<div id="content"></div>
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-content"></div>
+</div>
+
+<script>
+  known_logs = {};
+  content = $("#content");
+
+  content.sortable({
+    placeholder: "ui-state-highlight",
+    handle: ".logger-header",
+    helper:'clone',
+    tolerance: 'pointer'
+  });
+
+  function processData(data) {
+    let keys = Object.keys(data),
+      known_keys = Object.keys(known_logs);
+
+    for(let i=0; i<keys.length; ++i) {
+      if (known_keys.indexOf(keys[i]) < 0) {
+        known_logs[keys[i]] = new Logger(keys[i]);
+        known_logs[keys[i]].append(content);
+      }
+
+      known_logs[keys[i]].write(data[keys[i]]);
+    }
+  }
+  window.processData = processData;
+
+  function mkDiv(id, clss) {
+    div = $("<div class=\"" + clss + "\" id=\"" + id + "\">");
+    content.append(div);
+
+    return div;
+  };
+
+  function Sidebar() {
+    let div = $("#sidebar"),
+      content = div.children(".sidebar-content"),
+      entries = {};
+
+    this.addEntry = function(text, callback) {
+      let newEntry = $("<div class=\"sidebar-entry\">" + text + "</div>");
+      newEntry.click(() => {
+        $(this).remove();
+        callback();
+      });
+      content.append(newEntry);
+
+      entries[text] = newEntry;
+      return newEntry;
+    }
+
+    this.removeEntry = function(name) {
+      entries[name].remove();
+      delete entries[name];
+    }
+  }
+
+  /**
+   * The Logger class
+   * @param {string} id   the ID to use
+   * @param {string} name the name to apply (can be null)
+   */
+  function Logger(id, name) {
+    if (!name) {
+      let names = id.split("-");
+      for(let i=0; i<names.length; ++i) {
+        if (names[i].length > 1)
+          names[i] = names[i][0].toUpperCase() + names[i].substring(1);
+        else
+          names[i] = names[i].toUpperCase();
+      }
+
+      name = names.join(" ");
+    }
+
+    let div = $("<div class='logger-container'>" +
+        "<div class='logger-button left minimize'>" +
+          "<span class='glyphicon glyphicon-minus' aria-hidden='true'></span>" +
+        "</div>" +
+        "<div class='logger-button tail active'>tail</div>" +
+        "<div class='logger-button minimap active'>minimap</div>" +
+        "<div class='logger-button wrap inactive'>wrap</div>" +
+        "<div class='logger-header'>" + name + "</div>" +
+      "<div class='logger-content' /></div>"),
+      colorClass = null,
+      isScrolling = false,
+      lines = 0,
+      lineValues = {},
+      tailing = true,
+      minimap = true,
+      maxLines = 1000,
+      sidebar = new Sidebar(),
+      self = this,
+      wrapping = false;
+
+    // Setup the click handlers
+    div.children(".logger-header").dblclick(function() {
+      div.toggleClass("priority");
+    });
+
+
+    div.children(".logger-button.minimize").click(function() {
+      // div.toggleClass("collapsed");
+      div.fadeOut();
+
+      sidebar.addEntry(name, function() {
+        div.removeClass("collapsed");
+        div.css("display", "initial");
+        sidebar.removeEntry(name);
+      });
+    });
+
+    div.children(".logger-button.tail").click(function() {
+      tailing = !tailing;
+      $(this).toggleClass("active");
+      $(this).toggleClass("inactive");
+
+      if (tailing) {
+        self.scrollToBottom();
+      }
+    });
+
+    div.children(".logger-button.wrap").click(function() {
+      wrapping = !wrapping;
+      $(this).toggleClass("active");
+      $(this).toggleClass("inactive");
+
+      let content = div.children(".logger-content");
+      content.toggleClass("wrap");
+    });
+
+    div.children(".logger-button.minimap").click(function() {
+      minimap = !minimap;
+      $(this).toggleClass("active");
+      $(this).toggleClass("inactive");
+
+      let content = div.children(".logger-content"),
+        elems = content.children("pre"),
+        currOffset = content.scrollTop(),
+        currScrollHeight = content[0].scrollHeight,
+        proportionalScroll = 1.0 - (currOffset / currScrollHeight);
+
+      for(let i=0; i<elems.length; ++i) {
+        let elem = $(elems[i]),
+          lineId = elem.attr("lineid");
+
+        if (!elem.hasClass("red"))
+          elem.toggleClass("minimap");
+        elem.html((minimap) ? lineValues[lineId].minimap : lineValues[lineId].raw);
+      }
+
+      content.scrollTop(content[0].scrollHeight - (content[0].scrollHeight * proportionalScroll));
+    });
+
+    function randomString(count) {
+      let lower = 48,
+        upper = 127,
+        range = upper - lower,
+        curr = 0,
+        ret = "";
+
+      for(let i=0; i<count; ++i) {
+        // Put us at a random number in between lower and upper
+        curr = ((Math.random() * Math.random() * 1000000) % range) + lower;
+        ret += String.fromCharCode(curr);
+      }
+
+      return ret;
+    }
+
+    function buildLine(child, line, colorClass) {
+      let id = randomString(32),
+        open = "<pre lineid=\"" + id + "\" class=\"";
+        header = open + ((colorClass) ? colorClass : "") + " " +
+          ((minimap && colorClass != "red") ? " minimap" : "") + "\">",
+        minimapVal = convertToMinimap(line);
+
+      lineValues[id] = {
+        "minimap": (colorClass == "red") ? line : minimapVal,
+        "raw": line
+      };
+
+      lines++;
+      if (minimap && colorClass != "red")
+        return header + convertToMinimap(line) + "</pre>";
+      else {
+        return header + line + "</pre>";
+      }
+    }
+
+    function convertToMinimap(line) {
+      let numChars = 4,
+        convChar = '&middot;';
+
+      convChar = "&#9632;";
+
+      return convertCharacters(
+        convertWhitespace(line), convChar);
+    }
+
+    function convertCharacters(line, convChar) {
+      let newLine = "",
+        currChunk = null;
+
+      for(let i=0; i<line.length; ++i) {
+        let char = line[i];
+
+        if (/[\S]/.test(char)) {
+          if ((!currChunk || currChunk.length < 4)) {
+            currChunk = currChunk || "";
+            currChunk += char;
+          } else {
+            if (currChunk) {
+              newLine += convChar;
+              currChunk = char;
+            }
+          }
+        } else {
+          if (currChunk) {
+            newLine += convChar;
+            currChunk = null;
+          }
+
+          newLine += char;
+        }
+      }
+
+      if (currChunk)
+        newLine += convChar;
+
+      return newLine;
+    }
+
+    function convertWhitespace(line) {
+      let newLine = "",
+        currChunk = null;
+
+      for(let i=0; i<line.length; ++i) {
+        let char = line[i];
+
+        if (/\s/.test(char) && (!currChunk || currChunk.length < 4)) {
+          currChunk = currChunk || "";
+          currChunk += char;
+        } else {
+          if (currChunk) {
+            newLine += currChunk;
+            currChunk = null;
+          }
+
+          newLine += char;
+        }
+      }
+
+      return newLine;
+    }
+
+    function writeLine(child, line, colorClass) {
+      let header = (colorClass) ? "<pre class=\"" + colorClass + "\">" : "<pre>",
+        currHtml = child.html();
+
+      lines++;
+      child.append(header + line + "</pre>");
+    }
+
+    function scrolledDown(child) {
+      return tailing;
+
+      // Might not need this anymore
+      let currScroll = (child[0].scrollHeight - child.scrollTop());
+
+      if (currScroll == child.outerHeight() || currScroll == 783 || child.outerHeight() < 800) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    this.append = function(target) {
+      target.append(div);
+    };
+
+    this.scrollToBottom = function() {
+      if (tailing && !isScrolling) {
+        isScrolling = true;
+        child = div.children(".logger-content").first();
+
+        // child.scrollTop(child[0].scrollHeight);
+        child.animate({scrollTop: child[0].scrollHeight}, 800, function() {
+          child = div.children(".logger-content").first();
+
+          // This jiggles the screen, so... turn off the scrubbing
+          // until they start tailing again
+          let children = child.children(),
+            curr = 0;
+
+          while (lines > maxLines) {
+            if (children.length > curr && children[curr]) {
+              let currChild = children[curr],
+                lineId = $(currChild).prop("lineId");
+
+              currChild.remove();
+              delete children[curr];
+              delete lineValues[lineId];
+            }
+
+            curr++;
+            lines--;
+          }
+
+          isScrolling = false;
+
+          // Ensure we're at the bottom here, we have to
+          // re-get the element because its scrollHeight
+          // has likely changed again
+          child.scrollTop(child[0].scrollHeight);
+        });
+      }
+    };
+
+    this.write = function(data) {
+      let child = div.children(".logger-content").first(),
+        scroll = scrolledDown(child),
+        has_update = false,
+        newHtml = "";
+
+      for(let i=0; i<data.length; ++i) {
+        let entry = data[i];
+
+        entry = entry.replace(/^\[2K\[1G\[\?25h/, "")
+
+        // 22 is normal
+        if (entry.match(/^.\[0m.\[22m/)) {
+          entry = entry.replace(/^.\[0m.\[22m/, "");
+          colorClass = null;
+        } else if (entry.match(/^.?\[22m/)) {
+          entry = entry.replace(/^.?\[22m/, "");
+          colorClass = null;
+        } else if (entry.match(/^.\[0m.?\[36m/)) {
+          entry = entry.replace(/^.\[0m.?\[36m/, "");
+          colorClass = "cyan";
+        } else if (entry.match(/^.?\[0m.?\[33m/)) {
+          entry = entry.replace(/^.?\[0m.?\[33m/, "");
+          colorClass = "yellow";
+        } else if (entry.match(/^.?\[33m/)) {
+          entry = entry.replace(/^.?\[33m/, "");
+          colorClass = "yellow";
+        } else if (entry.match(/^.?\[0m.?\[32m/)) {
+          entry = entry.replace(/^.?\[0m.?\[32m/, "");
+          colorClass = "green";
+        } else if (entry.match(/^.?\[32m/)) {
+          entry = entry.replace(/^.?\[32m/, "");
+          colorClass = "green";
+        } else if (entry.match(/^.?\[0m.?\[31m/)) {
+          entry = entry.replace(/^.?\[0m.?\[31m/, "");
+          colorClass = "red";
+        } else if (entry.match(/^.?\[31m/)) {
+          entry = entry.replace(/^.?\[31m/, "");
+          colorClass = "red";
+        } else if (entry.match(/^.?\[0m/)) {
+          entry = entry.replace(/^.?\[0m/, "");
+          colorClass = null;
+        } else if (entry.match(/^[\sa-zA-Z\*]/)) {
+          // this is a tabbed in line, hold on to the previous coloration
+        } else
+          // Nothing, reset the line
+          colorClass = null;
+
+        newHtml += buildLine(child, entry, colorClass);
+        has_update = true;
+      }
+
+      // div.removeClass("highlighted");
+      if (has_update) {
+        if (div.hasClass("highlighted") || div.hasClass("highlighted-secondary")) {
+          div.toggleClass("highlighted");
+          div.toggleClass("highlighted-secondary");
+        } else
+          div.addClass("highlighted");
+
+        child.append(newHtml);
+      }
+
+      this.scrollToBottom();
+    }
+  }
+</script>
+
+<%= render @view_module, @view_template, assigns %>
+<!-- <main role="main">
+</main> -->
+<script src="<%= static_path(@conn, "/js/app.js") %>"></script>
+<script src="<%= static_path(@conn, "/js/bootstrap.min.js") %>"></script>
+</body>
+</html>
