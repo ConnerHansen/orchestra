@@ -9,6 +9,7 @@ type ServiceInterface interface {
 	GetProject() *ProjectConfiguration
 	GetState() string
 	IsMatch(interface{}) bool
+	SetProject(project *ProjectConfiguration)
 	Start() bool
 	Stop() bool
 	Update(map[string]interface{}) error

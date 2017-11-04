@@ -27,27 +27,6 @@ type ServerConfiguration struct {
 	HTTPSOnly       bool   `json:"https_only"`
 }
 
-// ServiceConfiguration the service configuration
-type ServiceConfiguration struct {
-	Accept func(interface{}) bool
-	Match  func(interface{}, interface{}) bool
-	New    func(map[string]interface{}, *ProjectConfiguration) interface{}
-	Start  func(interface{}) bool
-	Stop   func(interface{})
-	Update func(interface{}, map[string]interface{}) error
-}
-
-// AbstractService is the minimum interface that all services must
-// fulfill in order to be usable
-type AbstractService interface {
-	GenerateID()
-	GetID() string
-	GetLogs() *ServiceLog
-	GetProject() *ProjectConfiguration
-	Start() bool
-	Stop() bool
-}
-
 var (
 	// Config the global configuration
 	Config *Configuration
@@ -79,9 +58,11 @@ var (
 	DefaultConfiguration = Configuration{
 		Projects: map[string]*ProjectConfiguration{
 			"Test": &ProjectConfiguration{
+				ID:   GenerateServiceID(),
 				Name: "Test",
 				Services: []interface{}{
 					&RunnableServiceConfiguration{
+						ID:       GenerateServiceID(),
 						Name:     "Hello World",
 						Commands: []string{"echo 'hello world'"},
 						Type:     "runnable_service_configuration",
@@ -159,6 +140,8 @@ func loadConfiguration(configName string) *Configuration {
 				if !matched {
 					Error.Println("Could not match service entry:", currService)
 				}
+			} else {
+				service.(ServiceInterface).SetProject(project)
 			}
 		}
 

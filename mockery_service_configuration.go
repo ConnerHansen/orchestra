@@ -124,6 +124,10 @@ func (m *MockeryServiceConfiguration) IsMatch(config interface{}) bool {
 	return m.ID != "" && m.ID == configID
 }
 
+func (m *MockeryServiceConfiguration) SetProject(project *ProjectConfiguration) {
+	m.Project = project
+}
+
 func (m *MockeryServiceConfiguration) Start() bool {
 	if !m.Running {
 		m.Process = &MockeryProcess{

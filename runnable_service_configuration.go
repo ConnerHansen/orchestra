@@ -46,6 +46,8 @@ type RunnableServiceConfiguration struct {
 	WorkingDir  string                `json:"working_dir"`
 }
 
+// Accept tests if this interface is a RunnableServiceConfiguration or a map
+// of a RunnableServiceConfiguration
 func (s *RunnableServiceConfiguration) Accept(src interface{}) bool {
 	switch src.(type) {
 	case *RunnableServiceConfiguration:
@@ -64,6 +66,7 @@ func (s *RunnableServiceConfiguration) Accept(src interface{}) bool {
 	return false
 }
 
+// Create creates a new RunnableServiceConfiguration from the provided interface
 func (s *RunnableServiceConfiguration) Create(newConfig map[string]interface{}, project *ProjectConfiguration) ServiceInterface {
 	runnable := &RunnableServiceConfiguration{}
 	runnable.Update(newConfig)
@@ -77,10 +80,12 @@ func (s *RunnableServiceConfiguration) GenerateID() {
 	s.ID = GenerateServiceID()
 }
 
+// GetID returns the ID of the configuration
 func (s *RunnableServiceConfiguration) GetID() string {
 	return s.ID
 }
 
+// GetLogs returns the current set of logs for the process if it exists
 func (s *RunnableServiceConfiguration) GetLogs() *ServiceLog {
 	if s.Process != nil {
 		return s.Process.Logs
@@ -89,10 +94,12 @@ func (s *RunnableServiceConfiguration) GetLogs() *ServiceLog {
 	return nil
 }
 
+// GetProject returns the current project of the service
 func (s *RunnableServiceConfiguration) GetProject() *ProjectConfiguration {
 	return s.Project
 }
 
+// GetState returns the current state of the service
 func (s *RunnableServiceConfiguration) GetState() string {
 	return s.State
 }
@@ -131,6 +138,7 @@ func (s *RunnableServiceConfiguration) GetWorkingDir() string {
 	return s.WorkingDir
 }
 
+// IsMatch determines if this interface is a RunnableServiceConfiguration
 func (s *RunnableServiceConfiguration) IsMatch(config interface{}) bool {
 	var configID string
 
@@ -147,6 +155,11 @@ func (s *RunnableServiceConfiguration) IsMatch(config interface{}) bool {
 
 	// Return if the IDs are not empty and equal
 	return s.ID != "" && s.ID == configID
+}
+
+// SetProject assigns the project to this configuration
+func (s *RunnableServiceConfiguration) SetProject(project *ProjectConfiguration) {
+	s.Project = project
 }
 
 // Start starts a thing

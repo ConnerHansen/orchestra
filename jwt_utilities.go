@@ -13,7 +13,6 @@ var (
 
 // GenerateServiceID generates a new ID for use with services
 func GenerateServiceID() string {
-	Debug.Println("Generating new service ID")
 	return GenerateRandomString(24)
 }
 
