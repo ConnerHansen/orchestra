@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"runtime/debug"
 	"sync"
-	"syscall"
 )
 
 // ServiceProcess the struct for holding the currently running service process
@@ -80,7 +79,7 @@ func (s *ServiceProcess) Cleanup() error {
 // on the various channels and pipes
 func (s *ServiceProcess) Kill() {
 	Debug.Println("Kill called against", s.Configuration.Name)
-	err := syscall.Kill(-s.Command.Process.Pid, syscall.SIGKILL)
+	err := haltProcess(s.Command.Process)
 	if err != nil {
 		Error.Println("Could not kill process:", err)
 	}
@@ -89,8 +88,7 @@ func (s *ServiceProcess) Kill() {
 // Start initializes the process and starts it up, returning a new pointer
 // to a service process
 func (s *ServiceProcess) Start(config *RunnableServiceConfiguration) *ServiceProcess {
-	command := exec.Command("bash")
-	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	command := setupBaseCommand()
 
 	inputPipe, err := command.StdinPipe()
 	if err != nil {

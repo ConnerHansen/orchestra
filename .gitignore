@@ -1,5 +1,6 @@
 .DS_STORE
 /orchestra
+/orchestra.exe
 vendor/
 logs/
 ssl/
